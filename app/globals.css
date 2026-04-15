@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+
+:root {
+  --blue:   #2ca3ee;
+  --blue2:  #00b8f1;
+  --yellow: #e6fe00;
+  --border: rgba(44,163,238,0.25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: #000;
+  background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(44,163,238,0.15) 0%, transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: #fff;
+  font-family: 'Barlow', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 2px; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up   { animation: fadeUp 0.35s ease both; }
+.fade-up-1 { animation: fadeUp 0.35s 0.08s ease both; }
+.fade-up-2 { animation: fadeUp 0.35s 0.16s ease both; }
+
+.glass-card {
+  background: rgba(11,21,32,0.8);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  color: #fff; font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 0.9rem; letter-spacing: 0.06em;
+  text-transform: uppercase; border: none; border-radius: 9px;
+  padding: 0.65rem 1.5rem; cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 16px rgba(44,163,238,0.3);
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-yellow {
+  background: var(--yellow); color: #000;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 0.9rem; letter-spacing: 0.06em;
+  text-transform: uppercase; border: none; border-radius: 9px;
+  padding: 0.65rem 1.5rem; cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-yellow:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.btn-yellow:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent; color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.15); font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600; font-size: 0.82rem; letter-spacing: 0.06em;
+  text-transform: uppercase; border-radius: 8px;
+  padding: 0.45rem 1rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+.btn-danger {
+  background: rgba(239,68,68,0.12); color: #f87171;
+  border: 1px solid rgba(239,68,68,0.3); font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em;
+  border-radius: 8px; padding: 0.45rem 1rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.22); }
+
+.input-field {
+  width: 100%; background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border); border-radius: 9px;
+  color: #fff; font-family: 'Barlow', sans-serif; font-size: 0.875rem;
+  padding: 0.65rem 0.875rem; outline: none; transition: border-color 0.2s;
+}
+.input-field:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(44,163,238,0.12); }
+.input-field::placeholder { color: rgba(255,255,255,0.3); }
+
+.badge-yellow {
+  display: inline-block; background: var(--yellow); color: #000;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 2px 10px; border-radius: 20px;
+}
+
+.alert-success { background: rgba(5,46,22,0.8); border: 1px solid #4ade80; border-radius: 9px; color: #4ade80; padding: 0.75rem 1rem; font-size: 0.85rem; }
+.alert-error   { background: rgba(45,0,0,0.8); border: 1px solid #f87171; border-radius: 9px; color: #f87171; padding: 0.75rem 1rem; font-size: 0.85rem; }
+.alert-warning { background: rgba(45,26,0,0.8); border: 1px solid #fbbf24; border-radius: 9px; color: #fbbf24; padding: 0.75rem 1rem; font-size: 0.85rem; }
+.alert-info    { background: rgba(8,24,48,0.8); border: 1px solid var(--blue); border-radius: 9px; color: rgba(255,255,255,0.8); padding: 0.75rem 1rem; font-size: 0.85rem; }
+
+.metric-card { background: rgba(11,21,32,0.8); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
+.metric-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.75rem; color: var(--yellow); line-height: 1; }
+.metric-label { font-size: 0.7rem; color: rgba(255,255,255,0.45); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Tab styles */
+.tab-bar { display: flex; gap: 0.375rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.tab-btn {
+  padding: 0.5rem 1.125rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(44,163,238,0.2);
+  background: transparent; color: rgba(255,255,255,0.55); transition: all 0.15s;
+  font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.04em;
+}
+.tab-btn:hover { border-color: var(--blue); color: #fff; }
+.tab-btn.active { background: rgba(44,163,238,0.15); border-color: var(--blue); color: var(--blue); font-weight: 700; }
+
+/* Ladder table */
+.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.ladder-table thead th {
+  background: rgba(44,163,238,0.1); color: rgba(255,255,255,0.5);
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 0.72rem; padding: 0.625rem 0.75rem; text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.ladder-table thead th:first-child,
+.ladder-table thead th:nth-child(2) { text-align: left; }
+.ladder-table tbody td {
+  padding: 0.625rem 0.75rem; border-bottom: 1px solid rgba(44,163,238,0.06);
+  color: rgba(255,255,255,0.85); text-align: center;
+}
+.ladder-table tbody td:first-child,
+.ladder-table tbody td:nth-child(2) { text-align: left; }
+.ladder-table tbody tr:hover td { background: rgba(44,163,238,0.04); }
+.ladder-table tbody tr.top-8 td { background: rgba(44,163,238,0.03); }
+.ladder-table tbody tr.rank-1 td:nth-child(2) { color: var(--yellow); font-weight: 700; }
+.rank-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.8rem;
+}

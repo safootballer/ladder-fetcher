@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: safie-leagues
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install --legacy-peer-deps && npx prisma generate && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      - key: PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING
+        value: "1"
+
+  - type: cron
+    name: safie-leagues-sync
+    runtime: node
+    region: oregon
+    schedule: "0 3 * * *"
+    buildCommand: npm install --legacy-peer-deps
+    startCommand: node -e "
+      const secret = process.env.CRON_SECRET;
+      const url = process.env.APP_URL + '/api/cron';
+      fetch(url, { headers: { 'x-cron-secret': secret } })
+        .then(r => r.json())
+        .then(d => console.log('Cron result:', JSON.stringify(d)))
+        .catch(e => { console.error('Cron failed:', e.message); process.exit(1); });
+    "
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: APP_URL
+        sync: false

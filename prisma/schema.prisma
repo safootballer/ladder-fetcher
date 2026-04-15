@@ -1,0 +1,59 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model League {
+  id             Int     @id @default(autoincrement())
+  grade_id       String  @unique @db.VarChar(255)
+  grade_name     String? @db.VarChar(255)
+  season         String? @db.VarChar(255)
+  url            String? @db.Text
+  added_by       String? @db.VarChar(255)
+  added_at       String? @db.VarChar(255)
+  last_synced_at String? @db.VarChar(255)
+  sync_enabled   Int?    @default(1)
+
+  @@map("leagues")
+}
+
+model Ladder {
+  id             Int     @id @default(autoincrement())
+  grade_id       String? @db.VarChar(255)
+  grade_name     String? @db.VarChar(255)
+  season         String? @db.VarChar(255)
+  round_id       String? @db.VarChar(255)
+  round_name     String? @db.VarChar(255)
+  team_id        String? @db.VarChar(255)
+  team_name      String? @db.VarChar(255)
+  rank           Int?
+  played         Int?
+  wins           Int?
+  losses         Int?
+  draws          Int?
+  byes           Int?    @default(0)
+  points         Int?
+  percentage     Float?
+  points_for     Int?    @default(0)
+  points_against Int?    @default(0)
+  forfeits       Int?    @default(0)
+  synced_at      String? @db.VarChar(255)
+
+  @@map("ladder")
+}
+
+model User {
+  id            Int     @id @default(autoincrement())
+  username      String  @unique @db.VarChar(255)
+  password_hash String  @db.VarChar(255)
+  role          String  @db.VarChar(50)
+  created_at    String? @db.VarChar(255)
+  last_login    String? @db.VarChar(255)
+
+  @@map("users")
+}
