@@ -5,13 +5,15 @@ import { getLeagueCategory, LEVEL1_ORDER, LEVEL2_ORDER } from '@/lib/leagueMap'
 
 export default function DashboardPage() {
   const { data: session } = useSession()
-  const [leagues, setLeagues]       = useState<any[]>([])
-  const [level1, setLevel1]         = useState<string>('SANFL')
-  const [level2, setLevel2]         = useState<string | null>(null)
+  const [leagues, setLeagues]             = useState<any[]>([])
+  const [level1, setLevel1]               = useState<string>('SANFL')
+  const [level2, setLevel2]               = useState<string | null>(null)
   const [activeGradeId, setActiveGradeId] = useState<string | null>(null)
-  const [ladder, setLadder]         = useState<any[]>([])
+  const [ladder, setLadder]               = useState<any[]>([])
   const [loadingLadder, setLoadingLadder] = useState(false)
-  const [copiedId, setCopiedId]     = useState<string | null>(null)
+  const [copiedId, setCopiedId]           = useState<string | null>(null)
+  const [publishing, setPublishing]       = useState(false)
+  const [publishMsg, setPublishMsg]       = useState<{ type: string; text: string } | null>(null)
 
   const loadLeagues = useCallback(async () => {
     const data = await fetch('/api/leagues').then(r => r.json())
@@ -25,23 +27,21 @@ export default function DashboardPage() {
     return () => window.removeEventListener('leagues:updated', loadLeagues)
   }, [loadLeagues])
 
-  // When level1 changes, pick first available level2
   useEffect(() => {
     const l2options = getLevel2Options(level1)
     setLevel2(l2options[0] ?? null)
     setActiveGradeId(null)
   }, [level1, leagues])
 
-  // When level2 changes, pick first available grade
   useEffect(() => {
     if (!level2) return
     const grades = getGradesForLevel2(level1, level2)
     if (grades.length > 0) setActiveGradeId(grades[0].grade_id)
   }, [level2])
 
-  // Load ladder when grade changes
   useEffect(() => {
     if (!activeGradeId) return
+    setPublishMsg(null)
     setLoadingLadder(true)
     fetch(`/api/ladder?gradeId=${activeGradeId}`)
       .then(r => r.json())
@@ -83,10 +83,31 @@ export default function DashboardPage() {
     })
   }
 
-  const level2Options  = getLevel2Options(level1)
-  const gradeOptions   = level2 ? getGradesForLevel2(level1, level2) : []
-  const currentLeague  = leagues.find(l => l.grade_id === activeGradeId)
-  const currentCat     = activeGradeId ? getLeagueCategory(activeGradeId) : null
+  async function publishToWebsite() {
+    if (!activeGradeId) return
+    setPublishing(true)
+    setPublishMsg(null)
+    try {
+      const res  = await fetch('/api/publish-ladder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gradeId: activeGradeId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPublishMsg({ type: 'success', text: `✅ Published to website: ${data.title}` })
+      } else {
+        setPublishMsg({ type: 'error', text: `❌ ${data.error ?? 'Publish failed'}` })
+      }
+    } catch (e: any) {
+      setPublishMsg({ type: 'error', text: `❌ ${e.message}` })
+    }
+    setPublishing(false)
+  }
+
+  const level2Options = getLevel2Options(level1)
+  const gradeOptions  = level2 ? getGradesForLevel2(level1, level2) : []
+  const currentLeague = leagues.find(l => l.grade_id === activeGradeId)
 
   const tabStyle = (active: boolean, color = '#2ca3ee') => ({
     padding: '0.5rem 1.125rem', borderRadius: 8,
@@ -122,7 +143,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* Level 1 — Main categories */}
+          {/* Level 1 */}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
             {LEVEL1_ORDER.filter(l1 => getLevel2Options(l1).length > 0).map(l1 => (
               <button key={l1} onClick={() => setLevel1(l1)} style={tabStyle(level1 === l1, '#2ca3ee')}>
@@ -131,7 +152,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Level 2 — Sub-categories */}
+          {/* Level 2 */}
           {level2Options.length > 0 && (
             <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem', paddingLeft: '0.5rem', borderLeft: '3px solid rgba(44,163,238,0.3)' }}>
               {level2Options.map(l2 => (
@@ -142,7 +163,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Level 3 — Individual grades */}
+          {/* Level 3 */}
           {gradeOptions.length > 0 && (
             <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '1.5rem', paddingLeft: '1rem', borderLeft: '3px solid rgba(230,254,0,0.2)' }}>
               {gradeOptions.map(lg => {
@@ -160,7 +181,7 @@ export default function DashboardPage() {
           {/* Ladder content */}
           {currentLeague && (
             <>
-              {/* Meta */}
+              {/* Meta cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div className="metric-card">
                   <div className="metric-label">Competition</div>
@@ -180,13 +201,38 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Copy button */}
+              {/* Action buttons */}
               {ladder.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>Ctrl+V into Excel or Google Sheets</span>
                   <button onClick={copyTable} className="btn-ghost" style={{ fontSize: '0.8rem' }}>
                     {copiedId === activeGradeId ? '✅ Copied!' : '📋 Copy Table'}
                   </button>
+                  <button
+                    onClick={publishToWebsite}
+                    disabled={publishing}
+                    style={{
+                      background: publishing ? 'rgba(230,254,0,0.3)' : '#e6fe00',
+                      color: '#000', border: 'none', borderRadius: 8,
+                      padding: '0.45rem 1rem', fontFamily: "'Barlow Condensed', sans-serif",
+                      fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em',
+                      textTransform: 'uppercase', cursor: publishing ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {publishing ? 'Publishing...' : '🌐 Publish to Website'}
+                  </button>
+                </div>
+              )}
+
+              {/* Publish message */}
+              {publishMsg && (
+                <div style={{
+                  marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: 8, fontSize: '0.85rem',
+                  background: publishMsg.type === 'success' ? 'rgba(5,46,22,0.8)' : 'rgba(45,0,0,0.8)',
+                  border: `1px solid ${publishMsg.type === 'success' ? '#4ade80' : '#f87171'}`,
+                  color: publishMsg.type === 'success' ? '#4ade80' : '#f87171',
+                }}>
+                  {publishMsg.text}
                 </div>
               )}
 
@@ -214,7 +260,7 @@ export default function DashboardPage() {
                       {ladder.map((row, i) => (
                         <tr key={row.id} className={`${i < 8 ? 'top-8' : ''} ${i === 0 ? 'rank-1' : ''}`}>
                           <td>
-                            <span className="rank-badge" style={{
+                            <span style={{
                               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                               width: 24, height: 24, borderRadius: '50%',
                               fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: '0.8rem',
