@@ -14,6 +14,8 @@ export default function DashboardPage() {
   const [copiedId, setCopiedId]           = useState<string | null>(null)
   const [publishing, setPublishing]       = useState(false)
   const [publishMsg, setPublishMsg]       = useState<{ type: string; text: string } | null>(null)
+  const [publishingOne, setPublishingOne] = useState(false)
+  const [publishOneMsg, setPublishOneMsg] = useState<{ type: string; text: string } | null>(null)
 
   const loadLeagues = useCallback(async () => {
     const data = await fetch('/api/leagues').then(r => r.json())
@@ -41,8 +43,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!activeGradeId) return
-    setPublishMsg(null)
     setLoadingLadder(true)
+    setPublishOneMsg(null)
     fetch(`/api/ladder?gradeId=${activeGradeId}`)
       .then(r => r.json())
       .then(d => setLadder(Array.isArray(d) ? d : []))
@@ -83,10 +85,9 @@ export default function DashboardPage() {
     })
   }
 
-  async function publishToWebsite() {
+  async function publishOne() {
     if (!activeGradeId) return
-    setPublishing(true)
-    setPublishMsg(null)
+    setPublishingOne(true); setPublishOneMsg(null)
     try {
       const res  = await fetch('/api/publish-ladder', {
         method: 'POST',
@@ -94,10 +95,27 @@ export default function DashboardPage() {
         body: JSON.stringify({ gradeId: activeGradeId }),
       })
       const data = await res.json()
+      if (data.success) setPublishOneMsg({ type: 'success', text: '✅ Published to website!' })
+      else setPublishOneMsg({ type: 'error', text: `❌ ${data.error ?? 'Failed'}` })
+    } catch (e: any) {
+      setPublishOneMsg({ type: 'error', text: `❌ ${e.message}` })
+    }
+    setPublishingOne(false)
+  }
+
+  async function publishAll() {
+    setPublishing(true); setPublishMsg(null)
+    try {
+      const res  = await fetch('/api/publish-all-ladders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const data = await res.json()
       if (data.success) {
-        setPublishMsg({ type: 'success', text: `✅ Published to website: ${data.title}` })
+        setPublishMsg({ type: 'success', text: `✅ Updated ${data.summary.succeeded} tables on website${data.summary.failed > 0 ? `, ${data.summary.failed} failed` : ''}` })
       } else {
-        setPublishMsg({ type: 'error', text: `❌ ${data.error ?? 'Publish failed'}` })
+        setPublishMsg({ type: 'error', text: `❌ ${data.error ?? 'Failed'}` })
       }
     } catch (e: any) {
       setPublishMsg({ type: 'error', text: `❌ ${e.message}` })
@@ -105,16 +123,16 @@ export default function DashboardPage() {
     setPublishing(false)
   }
 
-  const level2Options = getLevel2Options(level1)
-  const gradeOptions  = level2 ? getGradesForLevel2(level1, level2) : []
-  const currentLeague = leagues.find(l => l.grade_id === activeGradeId)
+  const level2Options  = getLevel2Options(level1)
+  const gradeOptions   = level2 ? getGradesForLevel2(level1, level2) : []
+  const currentLeague  = leagues.find(l => l.grade_id === activeGradeId)
 
   const tabStyle = (active: boolean, color = '#2ca3ee') => ({
     padding: '0.5rem 1.125rem', borderRadius: 8,
     fontSize: '0.82rem', fontWeight: active ? 700 : 500,
     cursor: 'pointer',
     border: active ? `1.5px solid ${color}` : '1.5px solid rgba(44,163,238,0.2)',
-    background: active ? `rgba(44,163,238,0.15)` : 'transparent',
+    background: active ? 'rgba(44,163,238,0.15)' : 'transparent',
     color: active ? color : 'rgba(255,255,255,0.55)',
     transition: 'all 0.15s',
     fontFamily: "'Barlow Condensed', sans-serif",
@@ -126,14 +144,33 @@ export default function DashboardPage() {
     <div className="fade-up" style={{ maxWidth: 1200, margin: '0 auto' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: '2.25rem', color: '#2ca3ee', margin: 0 }}>
-          League Ladders
-        </h1>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginTop: '0.35rem' }}>
-          {'Welcome back, '}<strong style={{ color: '#fff' }}>{session?.user?.name}</strong>
-          {' · Auto-synced daily from PlayHQ'}
-        </p>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: '2.25rem', color: '#2ca3ee', margin: 0 }}>
+            League Ladders
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginTop: '0.35rem' }}>
+            {'Welcome back, '}<strong style={{ color: '#fff' }}>{session?.user?.name}</strong>
+            {' · Auto-synced daily from PlayHQ'}
+          </p>
+        </div>
+
+        {/* Update All Tables button */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <button onClick={publishAll} disabled={publishing} className="btn-yellow" style={{ fontSize: '0.88rem', padding: '0.65rem 1.25rem' }}>
+            {publishing ? '⏳ Updating...' : '🌐 Update All Tables on Web'}
+          </button>
+          {publishMsg && (
+            <div style={{
+              padding: '0.5rem 0.875rem', borderRadius: 8, fontSize: '0.8rem',
+              background: publishMsg.type === 'success' ? 'rgba(5,46,22,0.8)' : 'rgba(45,0,0,0.8)',
+              border: `1px solid ${publishMsg.type === 'success' ? '#4ade80' : '#f87171'}`,
+              color: publishMsg.type === 'success' ? '#4ade80' : '#f87171',
+            }}>
+              {publishMsg.text}
+            </div>
+          )}
+        </div>
       </div>
 
       {leagues.length === 0 ? (
@@ -181,7 +218,6 @@ export default function DashboardPage() {
           {/* Ladder content */}
           {currentLeague && (
             <>
-              {/* Meta cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div className="metric-card">
                   <div className="metric-label">Competition</div>
@@ -208,31 +244,26 @@ export default function DashboardPage() {
                   <button onClick={copyTable} className="btn-ghost" style={{ fontSize: '0.8rem' }}>
                     {copiedId === activeGradeId ? '✅ Copied!' : '📋 Copy Table'}
                   </button>
-                  <button
-                    onClick={publishToWebsite}
-                    disabled={publishing}
-                    style={{
-                      background: publishing ? 'rgba(230,254,0,0.3)' : '#e6fe00',
-                      color: '#000', border: 'none', borderRadius: 8,
-                      padding: '0.45rem 1rem', fontFamily: "'Barlow Condensed', sans-serif",
-                      fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em',
-                      textTransform: 'uppercase', cursor: publishing ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {publishing ? 'Publishing...' : '🌐 Publish to Website'}
+                  <button onClick={publishOne} disabled={publishingOne} style={{
+                    background: publishingOne ? 'rgba(230,254,0,0.3)' : '#e6fe00',
+                    color: '#000', border: 'none', borderRadius: 8,
+                    padding: '0.45rem 1rem', fontFamily: "'Barlow Condensed', sans-serif",
+                    fontWeight: 800, fontSize: '0.78rem', letterSpacing: '0.06em',
+                    textTransform: 'uppercase', cursor: publishingOne ? 'not-allowed' : 'pointer',
+                  }}>
+                    {publishingOne ? 'Publishing...' : '🌐 Publish to Website'}
                   </button>
                 </div>
               )}
 
-              {/* Publish message */}
-              {publishMsg && (
+              {publishOneMsg && (
                 <div style={{
                   marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: 8, fontSize: '0.85rem',
-                  background: publishMsg.type === 'success' ? 'rgba(5,46,22,0.8)' : 'rgba(45,0,0,0.8)',
-                  border: `1px solid ${publishMsg.type === 'success' ? '#4ade80' : '#f87171'}`,
-                  color: publishMsg.type === 'success' ? '#4ade80' : '#f87171',
+                  background: publishOneMsg.type === 'success' ? 'rgba(5,46,22,0.8)' : 'rgba(45,0,0,0.8)',
+                  border: `1px solid ${publishOneMsg.type === 'success' ? '#4ade80' : '#f87171'}`,
+                  color: publishOneMsg.type === 'success' ? '#4ade80' : '#f87171',
                 }}>
-                  {publishMsg.text}
+                  {publishOneMsg.text}
                 </div>
               )}
 
