@@ -38,6 +38,23 @@ const COUNTRY_LEAGUE_MAP: Record<string, string> = {
   'Yorke Peninsula':           'yorke-peninsula',
 }
 
+interface LadderRow {
+  id: number
+  grade_id: string
+  rank: number
+  team_name: string
+  played: number
+  wins: number
+  losses: number
+  draws: number
+  byes: number | null
+  points: number
+  percentage: number | null
+  points_for: number | null
+  points_against: number | null
+  forfeits: number | null
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -45,18 +62,15 @@ export async function POST(req: NextRequest) {
   const { gradeId } = await req.json()
   if (!gradeId) return NextResponse.json({ error: 'gradeId required' }, { status: 400 })
 
-  // Get league info
   const league = await prisma.league.findFirst({ where: { grade_id: gradeId } })
   if (!league) return NextResponse.json({ error: 'League not found' }, { status: 404 })
 
-  // Get ladder rows
   const rows = await prisma.ladder.findMany({
     where: { grade_id: gradeId },
     orderBy: { rank: 'asc' },
-  })
+  }) as LadderRow[]
   if (!rows.length) return NextResponse.json({ error: 'No ladder data found' }, { status: 404 })
 
-  // Get category mapping
   const cat         = getLeagueCategory(gradeId)
   const competition = COMPETITION_MAP[cat.level1] ?? 'Country Football'
   const countryLeague = cat.level1 === 'Country Football'
@@ -77,7 +91,7 @@ export async function POST(req: NextRequest) {
     gradeName,
     season:      league.season ?? '2026',
     syncedAt,
-    teams: rows.map(r => ({
+    teams: rows.map((r: LadderRow) => ({
       _key:          `team-${r.id}`,
       rank:          r.rank,
       teamName:      r.team_name,
@@ -96,7 +110,6 @@ export async function POST(req: NextRequest) {
 
   if (countryLeague) doc.countryLeague = countryLeague
 
-  // Publish to Sanity using createOrReplace so republishing updates same doc
   const projectId = process.env.SANITY_PROJECT_ID
   const dataset   = process.env.SANITY_DATASET || 'production'
   const token     = process.env.SANITY_TOKEN
@@ -109,10 +122,7 @@ export async function POST(req: NextRequest) {
     `https://${projectId}.api.sanity.io/v2024-01-01/data/mutate/${dataset}`,
     {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ mutations: [{ createOrReplace: doc }] }),
     }
   )
