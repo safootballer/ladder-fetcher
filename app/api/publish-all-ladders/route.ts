@@ -38,6 +38,23 @@ const COUNTRY_LEAGUE_MAP: Record<string, string> = {
   'Yorke Peninsula':           'yorke-peninsula',
 }
 
+interface LadderRow {
+  id: number
+  grade_id: string
+  rank: number
+  team_name: string
+  played: number
+  wins: number
+  losses: number
+  draws: number
+  byes: number | null
+  points: number
+  percentage: number | null
+  points_for: number | null
+  points_against: number | null
+  forfeits: number | null
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -59,7 +76,7 @@ export async function POST(req: NextRequest) {
       const rows = await prisma.ladder.findMany({
         where: { grade_id: gradeId },
         orderBy: { rank: 'asc' },
-      })
+      }) as LadderRow[]
 
       if (!rows.length) {
         results.push({ name: league.grade_name ?? gradeId, success: false, message: 'No ladder data' })
@@ -81,7 +98,7 @@ export async function POST(req: NextRequest) {
         gradeName:   cat.level3,
         season:      league.season ?? '2026',
         syncedAt:    new Date().toISOString(),
-        teams: rows.map(r => ({
+        teams: rows.map((r: LadderRow) => ({
           _key:          `team-${r.id}`,
           rank:          r.rank,
           teamName:      r.team_name,
